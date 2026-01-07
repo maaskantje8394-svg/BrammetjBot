@@ -3,17 +3,16 @@ import fetch from "node-fetch";
 import { Client, GatewayIntentBits } from "discord.js";
 
 // ===== CONFIG =====
-const DISCORD_TOKEN = "PLAATS_HIER_JE_BOT_TOKEN"; // Zet hier je echte token
+const DISCORD_TOKEN = process.env.TOKEN; // Veilig via Render environment variable
 const VOICE_CHANNEL_ID = "1458572087647011058";
 const TIKTOK_USERNAME = "csmp.brammetje";
 const UPDATE_INTERVAL = 15 * 60 * 1000; // 15 minuten
 // ==================
 
 const app = express();
-app.get("/", (_, res) => res.send("OK")); // Voor UptimeRobot
-app.listen(3000);
+app.get("/", (_, res) => res.send("Bot is online!")); // Pingable door Render
+app.listen(process.env.PORT || 3000, () => console.log("Server running"));
 
-// Discord client
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 client.once("ready", async () => {
