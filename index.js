@@ -5,7 +5,7 @@ import { Client, GatewayIntentBits } from "discord.js";
 // ===== CONFIG =====
 const DISCORD_TOKEN = process.env.TOKEN; // Veilig via Render environment variable
 const VOICE_CHANNEL_ID = "1458572087647011058";
-const TIKTOK_USERNAME = "csmp.brammetje";
+const TIKTOK_USERNAME = "brammetjenl";
 const UPDATE_INTERVAL = 15 * 60 * 1000; // 15 minuten
 // ==================
 
