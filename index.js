@@ -1,33 +1,42 @@
 import express from "express";
 import fetch from "node-fetch";
-import { Client, GatewayIntentBits } from "discord.js";
+import { Client, GatewayIntentBits, Partials } from "discord.js";
 
 // ===== CONFIG =====
-const DISCORD_TOKEN = process.env.TOKEN; // Veilig via Render environment variable
+const DISCORD_TOKEN = process.env.TOKEN;
 const VOICE_CHANNEL_ID = "1458572087647011058";
+const LIVE_CHANNEL_ID = "1516556821278625994";
+const LIVE_ROLE_ID = "1189931854657224858";
 const TIKTOK_USERNAME = "brammetjenl";
-const UPDATE_INTERVAL = 15 * 60 * 1000; // 15 minuten
+const UPDATE_INTERVAL = 15 * 60 * 1000;
 // ==================
 
 const app = express();
-app.get("/", (_, res) => res.send("Bot is online!")); // Pingable door Render
+app.get("/", (_, res) => res.send("Bot is online!"));
 app.listen(process.env.PORT || 3000, () => console.log("Server running"));
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ],
+});
+
+let wasLive = false;
 
 client.once("ready", async () => {
   console.log(`Ingelogd als ${client.user.tag}`);
 
-  // Bot status
   client.user.setActivity("Kijkt naar Brammetje op TikTok 🎥", { type: 3 });
 
-  // Eerste update
   await updateFollowers();
 
-  // Interval updates
   setInterval(updateFollowers, UPDATE_INTERVAL);
+  setInterval(checkTikTokLive, 60 * 1000);
 });
 
+// ===== FOLLOWER COUNTER =====
 async function getFollowers(username) {
   const url = `https://www.tiktok.com/@${username}`;
   const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
@@ -41,7 +50,9 @@ async function updateFollowers() {
   try {
     const followers = await getFollowers(TIKTOK_USERNAME);
     const voiceChannel = await client.channels.fetch(VOICE_CHANNEL_ID);
+
     const newName = `『🎯』Volgers: ${followers}`;
+
     if (voiceChannel.name !== newName) {
       await voiceChannel.setName(newName);
       console.log("Kanaalnaam geüpdatet:", newName);
@@ -50,5 +61,82 @@ async function updateFollowers() {
     console.error("Update fout:", err.message);
   }
 }
+
+// ===== LIVE CHECK =====
+async function checkTikTokLive() {
+  try {
+    const url = `https://www.tiktok.com/@${TIKTOK_USERNAME}/live`;
+    const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+    const html = await res.text();
+
+    const isLive =
+      html.includes('"LiveRoom"') ||
+      html.includes('"is_live":true') ||
+      html.includes("live-room");
+
+    const liveLink = `https://www.tiktok.com/@${TIKTOK_USERNAME}/live`;
+
+    if (isLive && !wasLive) {
+      wasLive = true;
+
+      const channel = await client.channels.fetch(LIVE_CHANNEL_ID);
+
+      const embedEN = {
+        color: 0xff0000,
+        title: "🔴 We are LIVE",
+        description:
+          `-# Stick around and don't forget to follow | 3K followers by July?? <a:PepoPopcorn:837880319146983425>\n\n${liveLink}`,
+      };
+
+      const embedNL = {
+        color: 0xff0000,
+        title: "🔴 We zijn LIVE",
+        description:
+          `-# Join gezellig en vergeet niet te volgen : ) | 3k volgers voor Juli?? <a:PepoPopcorn:837880319146983425>\n\n${liveLink}`,
+      };
+
+      await channel.send({
+        content: `<@&${LIVE_ROLE_ID}>`,
+        embeds: [embedEN, embedNL],
+      });
+
+      console.log("LIVE bericht verstuurd!");
+    }
+
+    if (!isLive) {
+      wasLive = false;
+    }
+  } catch (err) {
+    console.error("Live check fout:", err.message);
+  }
+}
+
+// ===== TEST COMMAND =====
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+
+  if (message.content === "!testembed") {
+    const liveLink = `https://www.tiktok.com/@${TIKTOK_USERNAME}/live`;
+
+    const embedEN = {
+      color: 0xff0000,
+      title: "🔴 We are LIVE (TEST)",
+      description:
+        `-# Stick around and don't forget to follow | 3K followers by July?? <a:PepoPopcorn:837880319146983425>\n\n${liveLink}`,
+    };
+
+    const embedNL = {
+      color: 0xff0000,
+      title: "🔴 We zijn LIVE (TEST)",
+      description:
+        `-# Join gezellig en vergeet niet te volgen : ) | 3k volgers voor Juli?? <a:PepoPopcorn:837880319146983425>\n\n${liveLink}`,
+    };
+
+    await message.channel.send({
+      content: `<@&${LIVE_ROLE_ID}>`,
+      embeds: [embedEN, embedNL],
+    });
+  }
+});
 
 client.login(DISCORD_TOKEN);
