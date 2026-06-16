@@ -4,9 +4,10 @@ import { Client, GatewayIntentBits } from "discord.js";
 
 // ===== CONFIG =====
 const DISCORD_TOKEN = process.env.TOKEN;
-const VOICE_CHANNEL_ID = "1458572087647011058";
 
+const VOICE_CHANNEL_ID = "1458572087647011058";
 const LIVE_CHANNEL_ID = "1516556821278625994";
+
 const USER_ID_TO_PING = "1189931854657224858";
 
 const TIKTOK_USERNAME = "brammetjenl";
@@ -73,7 +74,7 @@ async function updateFollowers() {
 }
 
 // ===== MESSAGE BUILDER =====
-function buildLiveMessage(lang, liveLink) {
+function buildMessage(lang, liveLink) {
   if (lang === "NL") {
     return `# We zijn **LIVE** <a:pepeD:881305738461470750>
 
@@ -111,10 +112,27 @@ async function checkTikTokLive() {
 
       const channel = await client.channels.fetch(LIVE_CHANNEL_ID);
 
-      const message = `\`\`\`\n${buildLiveMessage("EN", liveLink)}\n\n${buildLiveMessage("NL", liveLink)}\n\`\`\``;
+      // 💛 GELE EMBED
+      const embed = {
+        color: 0xFFD700,
+        title: "🔴 LIVE NU OP TIKTOK",
+        description: "We zijn live! Check de copyboxen hieronder 👇",
+      };
+
+      const enMessage = buildMessage("EN", liveLink);
+      const nlMessage = buildMessage("NL", liveLink);
 
       await channel.send({
-        content: `<@${USER_ID_TO_PING}>\n\n${message}`,
+        content: `<@${USER_ID_TO_PING}>`,
+        embeds: [embed],
+      });
+
+      await channel.send({
+        content: "```" + enMessage + "```",
+      });
+
+      await channel.send({
+        content: "```" + nlMessage + "```",
       });
 
       console.log("LIVE bericht verstuurd!");
@@ -135,15 +153,26 @@ client.on("messageCreate", async (message) => {
   if (message.content === "!testembed") {
     const liveLink = `https://www.tiktok.com/@${TIKTOK_USERNAME}/live`;
 
-    const messageText =
-      `\`\`\`\n` +
-      buildLiveMessage("EN", liveLink) +
-      `\n\n` +
-      buildLiveMessage("NL", liveLink) +
-      `\n\`\`\``;
+    const embed = {
+      color: 0xFFD700,
+      title: "🔴 TEST LIVE MESSAGE",
+      description: "Preview van live message 👇",
+    };
+
+    const enMessage = buildMessage("EN", liveLink);
+    const nlMessage = buildMessage("NL", liveLink);
 
     await message.channel.send({
-      content: `<@${USER_ID_TO_PING}>\n\n${messageText}`,
+      content: `<@${USER_ID_TO_PING}>`,
+      embeds: [embed],
+    });
+
+    await message.channel.send({
+      content: "```" + enMessage + "```",
+    });
+
+    await message.channel.send({
+      content: "```" + nlMessage + "```",
     });
   }
 });
