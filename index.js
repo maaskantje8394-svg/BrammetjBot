@@ -1,12 +1,14 @@
 import express from "express";
 import fetch from "node-fetch";
-import { Client, GatewayIntentBits, Partials } from "discord.js";
+import { Client, GatewayIntentBits } from "discord.js";
 
 // ===== CONFIG =====
 const DISCORD_TOKEN = process.env.TOKEN;
 const VOICE_CHANNEL_ID = "1458572087647011058";
+
 const LIVE_CHANNEL_ID = "1516556821278625994";
-const LIVE_ROLE_ID = "1189931854657224858";
+const USER_ID_TO_PING = "1189931854657224858"; // 👈 nu USER ping i.p.v. role
+
 const TIKTOK_USERNAME = "brammetjenl";
 const UPDATE_INTERVAL = 15 * 60 * 1000;
 // ==================
@@ -36,7 +38,7 @@ client.once("ready", async () => {
   setInterval(checkTikTokLive, 60 * 1000);
 });
 
-// ===== FOLLOWER COUNTER =====
+// ===== FOLLOWERS =====
 async function getFollowers(username) {
   const url = `https://www.tiktok.com/@${username}`;
   const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
@@ -83,20 +85,20 @@ async function checkTikTokLive() {
 
       const embedEN = {
         color: 0xff0000,
-        title: "🔴 We are LIVE",
+        title: "We are **LIVE** <a:pepeD:881305738461470750>",
         description:
-          `-# Stick around and don't forget to follow | 3K followers by July?? <a:PepoPopcorn:837880319146983425>\n\n${liveLink}`,
+           `-# Stick around and don't forget to follow | 3K followers by July?? <a:PepoPopcorn:837880319146983425>\n\n${liveLink}`,
       };
 
       const embedNL = {
         color: 0xff0000,
-        title: "🔴 We zijn LIVE",
+        title: "We zijn **LIVE** <a:pepeD:881305738461470750>",
         description:
-          `-# Join gezellig en vergeet niet te volgen : ) | 3k volgers voor Juli?? <a:PepoPopcorn:837880319146983425>\n\n${liveLink}`,
+            `-# Join gezellig en vergeet niet te volgen : ) | 3k volgers voor Juli?? <a:PepoPopcorn:837880319146983425>\n\n${liveLink}`,
       };
 
       await channel.send({
-        content: `<@&${LIVE_ROLE_ID}>`,
+        content: `<@${USER_ID_TO_PING}>`, // 👈 USER ping fix
         embeds: [embedEN, embedNL],
       });
 
@@ -111,7 +113,7 @@ async function checkTikTokLive() {
   }
 }
 
-// ===== TEST COMMAND =====
+// ===== TEST EMBED =====
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
@@ -120,20 +122,20 @@ client.on("messageCreate", async (message) => {
 
     const embedEN = {
       color: 0xff0000,
-      title: "🔴 We are LIVE (TEST)",
+      title: "We are **LIVE** <a:pepeD:881305738461470750>",
       description:
-        `-# Stick around and don't forget to follow | 3K followers by July?? <a:PepoPopcorn:837880319146983425>\n\n${liveLink}`,
+         `-# Stick around and don't forget to follow | 3K followers by July?? <a:PepoPopcorn:837880319146983425>\n\n${liveLink}`,
     };
 
     const embedNL = {
       color: 0xff0000,
-      title: "🔴 We zijn LIVE (TEST)",
+      title: "We zijn **LIVE** <a:pepeD:881305738461470750>",
       description:
-        `-# Join gezellig en vergeet niet te volgen : ) | 3k volgers voor Juli?? <a:PepoPopcorn:837880319146983425>\n\n${liveLink}`,
+          `-# Join gezellig en vergeet niet te volgen : ) | 3k volgers voor Juli?? <a:PepoPopcorn:837880319146983425>\n\n${liveLink}`,
     };
 
     await message.channel.send({
-      content: `<@&${LIVE_ROLE_ID}>`,
+      content: `<@${USER_ID_TO_PING}>`,
       embeds: [embedEN, embedNL],
     });
   }
