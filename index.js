@@ -37,20 +37,22 @@ client.once("ready", async () => {
   });
 
   await updateFollowers();
+
   setInterval(updateFollowers, UPDATE_INTERVAL);
   setInterval(checkTikTokLive, 60 * 1000);
 });
 
 // ===== FOLLOWERS =====
 async function getFollowers(username) {
-  const res = await fetch(`https://www.tiktok.com/@${username}`, {
+  const url = `https://www.tiktok.com/@${username}`;
+  const res = await fetch(url, {
     headers: { "User-Agent": "Mozilla/5.0" },
   });
 
   const html = await res.text();
   const match = html.match(/"followerCount":(\d+)/);
 
-  if (!match) return 0;
+  if (!match) throw new Error("Followers niet gevonden");
 
   return Number(match[1]);
 }
@@ -58,107 +60,41 @@ async function getFollowers(username) {
 async function updateFollowers() {
   try {
     const followers = await getFollowers(TIKTOK_USERNAME);
-    const channel = await client.channels.fetch(VOICE_CHANNEL_ID);
+    const voiceChannel = await client.channels.fetch(VOICE_CHANNEL_ID);
 
-    const name = `『🎯』Volgers: ${followers}`;
+    const newName = `『🎯』Volgers: ${followers}`;
 
-    if (channel.name !== name) {
-      await channel.setName(name);
+    if (voiceChannel.name !== newName) {
+      await voiceChannel.setName(newName);
+      console.log("Kanaalnaam geüpdatet:", newName);
     }
-  } catch (e) {
-    console.log(e.message);
+  } catch (err) {
+    console.error("Update fout:", err.message);
   }
 }
 
-// ===== EMBEDS =====
-function buildEmbed(lang, type, link) {
-  const EN = lang === "EN";
+// ===== MESSAGE BUILDER =====
+function buildMessage(lang, liveLink) {
+  if (lang === "NL") {
+    return `# We zijn **LIVE** <a:pepeD:881305738461470750>
 
-  if (type === "stream") {
-    return {
-      color: 0xffd700,
-      title: "🔴 LIVE OP STREAM",
-      description: `# We are **LIVE** <a:pepeD:881305738461470750>
+-# Join gezellig en vergeet niet te volgen : ) | 3k volgers voor Juli?? <a:PepoPopcorn:837880319146983425>
 
--# 3K followers by July?? <a:PepoPopcorn:837880319146983425>
-
-${link}`,
-    };
+${liveLink}`;
   }
 
-  if (type === "video") {
-    if (EN) {
-      return {
-        color: 0x00bfff,
-        title: "📹 NEW VIDEO",
-        description: `# Don't forget to **LIKE** <a:pepeD:881305738461470750>
+  return `# We are **LIVE** <a:pepeD:881305738461470750>
 
--# 3K followers by July?? <a:PepoPopcorn:837880319146983425>
+-# Stick around and don't forget to follow | 3K followers by July?? <a:PepoPopcorn:837880319146983425>
 
-${link}`,
-      };
-    } else {
-      return {
-        color: 0x00bfff,
-        title: "📹 NIEUWE VIDEO",
-        description: `# Vergeet niet te **LIKE** <a:pepeD:881305738461470750>
-
--# 3k volgers voor Juli?? <a:PepoPopcorn:837880319146983425>
-
-${link}`,
-      };
-    }
-  }
-
-  return null;
+${liveLink}`;
 }
-
-// ===== COMMANDS =====
-client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
-
-  const args = message.content.split(" ");
-
-  // !em
-  if (args[0] === "!em") {
-    const link = args[1];
-    const lang = args[2]?.toUpperCase();
-    const type = args[3]?.toLowerCase();
-
-    if (!link || !lang || !type) {
-      return message.reply("Gebruik: !em <link> EN|NL stream|video");
-    }
-
-    const embed = buildEmbed(lang, type, link);
-    if (!embed) return message.reply("❌ Ongeldige input");
-
-    return message.channel.send({
-      content: `<@${USER_ID_TO_PING}>`,
-      embeds: [embed],
-    });
-  }
-
-  // !testembed
-  if (message.content === "!testembed") {
-    const link = `https://www.tiktok.com/@${TIKTOK_USERNAME}/live`;
-
-    return message.channel.send({
-      content: `<@${USER_ID_TO_PING}>`,
-      embeds: [
-        {
-          color: 0xffd700,
-          title: "🔴 TEST LIVE",
-          description: `LIVE TEST\n\n${link}`,
-        },
-      ],
-    });
-  }
-});
 
 // ===== LIVE CHECK =====
 async function checkTikTokLive() {
   try {
-    const res = await fetch(`https://www.tiktok.com/@${TIKTOK_USERNAME}/live`, {
+    const url = `https://www.tiktok.com/@${TIKTOK_USERNAME}/live`;
+    const res = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0" },
     });
 
@@ -169,31 +105,76 @@ async function checkTikTokLive() {
       html.includes('"is_live":true') ||
       html.includes("live-room");
 
-    const link = `https://www.tiktok.com/@${TIKTOK_USERNAME}/live`;
+    const liveLink = `https://www.tiktok.com/@${TIKTOK_USERNAME}/live`;
 
     if (isLive && !wasLive) {
       wasLive = true;
 
       const channel = await client.channels.fetch(LIVE_CHANNEL_ID);
 
+      // 💛 GELE EMBED
+      const embed = {
+        color: 0xFFD700,
+        title: "🔴 LIVE NU OP TIKTOK",
+        description: "We zijn live! Check de copyboxen hieronder 👇",
+      };
+
+      const enMessage = buildMessage("EN", liveLink);
+      const nlMessage = buildMessage("NL", liveLink);
+
       await channel.send({
         content: `<@${USER_ID_TO_PING}>`,
-        embeds: [
-          {
-            color: 0xffd700,
-            title: "🔴 LIVE OP TIKTOK",
-            description: `# WE ARE LIVE 🔴
-
-${link}`,
-          },
-        ],
+        embeds: [embed],
       });
+
+      await channel.send({
+        content: "```" + enMessage + "```",
+      });
+
+      await channel.send({
+        content: "```" + nlMessage + "```",
+      });
+
+      console.log("LIVE bericht verstuurd!");
     }
 
-    if (!isLive) wasLive = false;
-  } catch (e) {
-    console.log(e.message);
+    if (!isLive) {
+      wasLive = false;
+    }
+  } catch (err) {
+    console.error("Live check fout:", err.message);
   }
 }
+
+// ===== TEST COMMAND =====
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+
+  if (message.content === "!testembed") {
+    const liveLink = `https://www.tiktok.com/@${TIKTOK_USERNAME}/live`;
+
+    const embed = {
+      color: 0xFFD700,
+      title: "Kopier hier onder je bericht aap",
+      description: "Hier idd schele aap",
+    };
+
+    const enMessage = buildMessage("EN", liveLink);
+    const nlMessage = buildMessage("NL", liveLink);
+
+    await message.channel.send({
+      content: `<@${USER_ID_TO_PING}>`,
+      embeds: [embed],
+    });
+
+    await message.channel.send({
+      content: "```" + enMessage + "```",
+    });
+
+    await message.channel.send({
+      content: "```" + nlMessage + "```",
+    });
+  }
+});
 
 client.login(DISCORD_TOKEN);
