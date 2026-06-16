@@ -73,22 +73,103 @@ async function updateFollowers() {
   }
 }
 
-// ===== MESSAGE BUILDER =====
-function buildEN(liveLink) {
-  return `# We are **LIVE** <a:pepeD:881305738461470750>
+// ===== EMBED BUILDER =====
+function buildEmbed(lang, type, link) {
+  const isEN = lang === "EN";
+
+  if (type === "stream") {
+    return {
+      color: 0xffd700,
+      title: "🔴 LIVE OP STREAM",
+      description: `# We are **LIVE** <a:pepeD:881305738461470750>
 
 -# Stick around and don't forget to follow | 3K followers by July?? <a:PepoPopcorn:837880319146983425>
 
-${liveLink}`;
+${link}`,
+    };
+  }
+
+  if (type === "video") {
+    if (isEN) {
+      return {
+        color: 0x00bfff,
+        title: "📹 NEW VIDEO",
+        description: `# Don't forget to **LIKE** <a:pepeD:881305738461470750>
+
+-# 3K followers by July?? <a:PepoPopcorn:837880319146983425>
+
+${link}`,
+      };
+    } else {
+      return {
+        color: 0x00bfff,
+        title: "📹 NIEUWE VIDEO",
+        description: `# Vergeet niet te **LIKE** <a:pepeD:881305738461470750>
+
+-# 3k volgers voor Juli?? <a:PepoPopcorn:837880319146983425>
+
+${link}`,
+      };
+    }
+  }
+
+  return null;
 }
 
-function buildNL(liveLink) {
-  return `# We zijn **LIVE** <a:pepeD:881305738461470750>
+// ===== !EM COMMAND =====
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+
+  const args = message.content.split(" ");
+
+  // !em handler
+  if (args[0] === "!em") {
+    const link = args[1];
+    const lang = args[2]?.toUpperCase();
+    const type = args[3]?.toLowerCase();
+
+    if (!link || !lang || !type) {
+      return message.reply("Gebruik: !em <link> EN|NL stream|video");
+    }
+
+    const embed = buildEmbed(lang, type, link);
+
+    if (!embed) return message.reply("❌ Ongeldige input");
+
+    return message.channel.send({
+      content: `<@${USER_ID_TO_PING}>`,
+      embeds: [embed],
+    });
+  }
+
+  // !testembed
+  if (message.content === "!testembed") {
+    const link = `https://www.tiktok.com/@${TIKTOK_USERNAME}/live`;
+
+    const embed = {
+      color: 0xffd700,
+      title: "🔴 TEST LIVE MESSAGE",
+      description: `# We are **LIVE** <a:pepeD:881305738461470750>
+
+-# Stick around and don't forget to follow | 3K followers by July?? <a:PepoPopcorn:837880319146983425>
+
+${link}
+
+-------------------------
+
+# We zijn **LIVE** <a:pepeD:881305738461470750>
 
 -# Join gezellig en vergeet niet te volgen : ) | 3k volgers voor Juli?? <a:PepoPopcorn:837880319146983425>
 
-${liveLink}`;
-}
+${link}`,
+    };
+
+    return message.channel.send({
+      content: `<@${USER_ID_TO_PING}>`,
+      embeds: [embed],
+    });
+  }
+});
 
 // ===== LIVE CHECK =====
 async function checkTikTokLive() {
@@ -112,19 +193,22 @@ async function checkTikTokLive() {
 
       const channel = await client.channels.fetch(LIVE_CHANNEL_ID);
 
-      const fullMessage =
-````md
-${buildEN(liveLink)}
+      const embed = {
+        color: 0xffd700,
+        title: "🔴 LIVE OP TIKTOK",
+        description: `# We are **LIVE** <a:pepeD:881305738461470750>
+
+-# Stick around and don't forget to follow | 3K followers by July?? <a:PepoPopcorn:837880319146983425>
+
+${liveLink}
 
 -------------------------
 
-${buildNL(liveLink)}
-````;
+# We zijn **LIVE** <a:pepeD:881305738461470750>
 
-      const embed = {
-        color: 0xFFD700,
-        title: "🔴 LIVE OP TIKTOK",
-        description: fullMessage,
+-# Join gezellig en vergeet niet te volgen : ) | 3k volgers voor Juli?? <a:PepoPopcorn:837880319146983425>
+
+${liveLink}`,
       };
 
       await channel.send({
@@ -135,41 +219,10 @@ ${buildNL(liveLink)}
       console.log("LIVE bericht verstuurd!");
     }
 
-    if (!isLive) {
-      wasLive = false;
-    }
+    if (!isLive) wasLive = false;
   } catch (err) {
     console.error("Live check fout:", err.message);
   }
 }
-
-// ===== TEST COMMAND =====
-client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
-
-  if (message.content === "!testembed") {
-    const liveLink = `https://www.tiktok.com/@${TIKTOK_USERNAME}/live`;
-
-    const fullMessage =
-````md
-${buildEN(liveLink)}
-
--------------------------
-
-${buildNL(liveLink)}
-````;
-
-    const embed = {
-      color: 0xFFD700,
-      title: "🔴 TEST LIVE MESSAGE",
-      description: fullMessage,
-    };
-
-    await message.channel.send({
-      content: `<@${USER_ID_TO_PING}>`,
-      embeds: [embed],
-    });
-  }
-});
 
 client.login(DISCORD_TOKEN);
