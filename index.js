@@ -74,18 +74,18 @@ async function updateFollowers() {
 }
 
 // ===== MESSAGE BUILDER =====
-function buildMessage(lang, liveLink) {
-  if (lang === "NL") {
-    return `# We zijn **LIVE** <a:pepeD:881305738461470750>
-
--# Join gezellig en vergeet niet te volgen : ) | 3k volgers voor Juli?? <a:PepoPopcorn:837880319146983425>
-
-${liveLink}`;
-  }
-
+function buildEN(liveLink) {
   return `# We are **LIVE** <a:pepeD:881305738461470750>
 
 -# Stick around and don't forget to follow | 3K followers by July?? <a:PepoPopcorn:837880319146983425>
+
+${liveLink}`;
+}
+
+function buildNL(liveLink) {
+  return `# We zijn **LIVE** <a:pepeD:881305738461470750>
+
+-# Join gezellig en vergeet niet te volgen : ) | 3k volgers voor Juli?? <a:PepoPopcorn:837880319146983425>
 
 ${liveLink}`;
 }
@@ -112,27 +112,24 @@ async function checkTikTokLive() {
 
       const channel = await client.channels.fetch(LIVE_CHANNEL_ID);
 
-      // 💛 GELE EMBED
+      const fullMessage =
+````md
+${buildEN(liveLink)}
+
+-------------------------
+
+${buildNL(liveLink)}
+````;
+
       const embed = {
         color: 0xFFD700,
-        title: "🔴 LIVE NU OP TIKTOK",
-        description: "We zijn live! Check de copyboxen hieronder 👇",
+        title: "🔴 LIVE OP TIKTOK",
+        description: fullMessage,
       };
-
-      const enMessage = buildMessage("EN", liveLink);
-      const nlMessage = buildMessage("NL", liveLink);
 
       await channel.send({
         content: `<@${USER_ID_TO_PING}>`,
         embeds: [embed],
-      });
-
-      await channel.send({
-        content: "```" + enMessage + "```",
-      });
-
-      await channel.send({
-        content: "```" + nlMessage + "```",
       });
 
       console.log("LIVE bericht verstuurd!");
@@ -153,26 +150,24 @@ client.on("messageCreate", async (message) => {
   if (message.content === "!testembed") {
     const liveLink = `https://www.tiktok.com/@${TIKTOK_USERNAME}/live`;
 
+    const fullMessage =
+````md
+${buildEN(liveLink)}
+
+-------------------------
+
+${buildNL(liveLink)}
+````;
+
     const embed = {
       color: 0xFFD700,
       title: "🔴 TEST LIVE MESSAGE",
-      description: "Preview van live message 👇",
+      description: fullMessage,
     };
-
-    const enMessage = buildMessage("EN", liveLink);
-    const nlMessage = buildMessage("NL", liveLink);
 
     await message.channel.send({
       content: `<@${USER_ID_TO_PING}>`,
       embeds: [embed],
-    });
-
-    await message.channel.send({
-      content: "```" + enMessage + "```",
-    });
-
-    await message.channel.send({
-      content: "```" + nlMessage + "```",
     });
   }
 });
